@@ -1,0 +1,10 @@
+Arp316_R.fits
+Arp316_G.fits
+Arp316_B.fits
+Arp316_RGB.fits
+Arp316_RGB.jpg
+*.log
+pre*.fits
+post*.fits
+back*.fits
+stars*.fits
