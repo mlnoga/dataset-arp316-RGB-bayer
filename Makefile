@@ -1,38 +1,34 @@
 # General settings
 OBJ =Arp316
 
-# Example for LRGB
+# Separate R G B channels w/o combination
 CHAN=RGB
-RGB=
-COMBINE=-chroma 2.0 -scnr 1.0 -autoScale 0.0125 -ppGamma 2.0 -ppSigma 2.0 -scaleBlack 5.5
-#COMBINE=-chroma 1.9 -autoScale 0.1 -ppGamma 3.0 -ppSigma 2.0 -scaleBlack 7.84
-#COMBINE=-chroma 2.5 -scnr 1.0 -autoScale 0.0125 -ppGamma 3.0 -ppSigma 2.0 -scaleBlack 5.5
-#COMBINE=-chroma 2.5 -scnr 1.0 -autoScale 0.0125 # 2 
-#COMBINE=-chroma 2.5 -scnr 1.0 -autoScale 0.0125 -ppGamma 3.5 -ppSigma 2.75 -scaleBlack 7.84   # 1
+RGB=-cfa GBRG -backGrid 128 -backClip 0 #-post post%02d.fits	
+COMBINE= -backGrid 128 -backClip 0 -chromaGamma 3.2 -chromaSigma 1.0 -autoScale 1.0 -ppGamma 2.5 --ppSigma 1.7 -scaleBlack 7.84 
 
 # Provide paths to your master dark frames here (they depend on exposure length, temperature, gain and bias)
 DARKL =""
-DARKR =""
-DARKG =""
-DARKB =""
+DARKR =calib/Master-Bias-Iso200_float.fit.gz
+DARKG =calib/Master-Bias-Iso200_float.fit.gz
+DARKB =calib/Master-Bias-Iso200_float.fit.gz
 DARKHa=""
 DARKO3=""
 DARKS2=""
 
 # Provide paths to your master flat frames here (they mostly depend on the filter, as well as on gain and bias)
 FLATL =""
-FLATR =""
-FLATG =""
-FLATB =""
+FLATR ="" # calib/Master-Flat_float.fit.gz not well matched to data
+FLATG ="" # calib/Master-Flat_float.fit.gz not well matched to data
+FLATB ="" # calib/Master-Flat_float.fit.gz not well matched to data
 FLATHa=""
 FLATO3=""
 FLATS2=""
 
 # Additional per-channel settings (put e.g. pre-determined stacking sigmas here to avoid the goal seek)
 PARAML =
-PARAMR =-bpSigLow 0 -bpSigHigh 0 -stWeight 1 
-PARAMG =-bpSigLow 0 -bpSigHigh 0 -stWeight 1 
-PARAMB =-bpSigLow 0 -bpSigHigh 0 -stWeight 1 
+PARAMR =-debayer R -stSigLow 6.168 -stSigHigh 7.264
+PARAMG =-debayer G -stSigLow 6.037 -stSigHigh 7.006
+PARAMB =-debayer B -stSigLow 6.122 -stSigHigh 7.124
 PARAMHa=
 PARAMO3=
 PARAMS2=
@@ -46,15 +42,16 @@ NL     =nightlight
 
 # Makefile targets and rules. These should usually not require any changes
 
-LS=$(wildcard L/*.fits) $(wildcard L/*.fit)
-RS=$(patsubst %,session%/$(OBJ)_R.fits,1 2 3 4)
-GS=$(patsubst %,session%/$(OBJ)_G.fits,1 2 3 4)
-BS=$(patsubst %,session%/$(OBJ)_B.fits,1 2 3 4)
-HaS=$(wildcard Ha/*.fits) $(wildcard Ha/*.fit)
-O3S=$(wildcard O3/*.fits) $(wildcard O3/*.fit)
-S2S=$(wildcard S2/*.fits) $(wildcard S2/*.fit)
+CFAS=$(wildcard CFA/*.fits) $(wildcard CFA/*.fit) $(wildcard CFA/*.gz)
+LS=$(wildcard L/*.fits) $(wildcard L/*.fit) $(wildcard L/*.gz)
+RS=$(wildcard R/*.fits) $(wildcard R/*.fit) $(wildcard R/*.gz) $(CFAS)
+GS=$(wildcard G/*.fits) $(wildcard G/*.fit) $(wildcard G/*.gz) $(CFAS)
+BS=$(wildcard B/*.fits) $(wildcard B/*.fit) $(wildcard B/*.gz) $(CFAS)
+HaS=$(wildcard Ha/*.fits) $(wildcard Ha/*.fit) $(wildcard Ha/*.gz)
+O3S=$(wildcard O3/*.fits) $(wildcard O3/*.fit) $(wildcard O3/*.gz)
+S2S=$(wildcard S2/*.fits) $(wildcard S2/*.fit) $(wildcard S2/*.gz)
 
-all: $(OBJ)_$(CHAN).fits
+all: $(patsubst %,$(OBJ)_%.fits,$(CHAN))
 
 backup:
 	mkdir -p backup && mv *.fits *.jpg *.log backup/
@@ -69,9 +66,6 @@ realclean: clean
 	$(OBJ)_Ha.fits $(OBJ)_O3.fits $(OBJ)_S2.fits \
 	$(OBJ)_L.log $(OBJ)_R.log $(OBJ)_G.log $(OBJ)_B.log \
 	$(OBJ)_Ha.log $(OBJ)_O3.log $(OBJ)_S2.log 
-
-spotless: realclean
-	for s in session? ; do make -C $$s realclean ; done
 
 folders:
 	for f in *_L_*.fits; do if test -f "$$f";  then mkdir -p L;  mv *_L_*.fits  L/;  fi; break; done
@@ -135,12 +129,3 @@ $(OBJ)_O3.fits: $(O3S)
 
 $(OBJ)_S2.fits: $(S2S)
 	$(NL) $(STD) $(PARAMS2) -dark $(DARKS2) -flat $(FLATS2) -out $@ stack $(S2S)
-
-session%/$(OBJ)_R.fits:
-	make -C session$*/ $(OBJ)_R.fits
-
-session%/$(OBJ)_G.fits:
-	make -C session$*/ $(OBJ)_G.fits
-
-session%/$(OBJ)_B.fits:
-	make -C session$*/ $(OBJ)_B.fits

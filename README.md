@@ -2,7 +2,7 @@
 
 Some sample data for processing with [Nightlight](https://github.com/mlnoga/nightlight). Final curve adjustment was performed in [Gimp](https://www.gimp.org/). 
 
-![Result miniature](./Arp316_RGB_curves_1920.jpg)
+![Result miniature](./Arp316_4k.jpg)
 
 ## Subexposures
 
